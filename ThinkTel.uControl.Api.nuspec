@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>ThinkTel.uControl.Api</id>
+    <version>1.0.0</version>
+    <authors>Paul Vaillant</authors>
+	<language>en-us</language>
+    <licenseUrl>https://raw.githubusercontent.com/thinktel/ThinkTel.uControl.Api/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/thinktel/ThinkTel.uControl.Api</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A library to access manage ThinkTel services using uControl. Requires .Net 4.5+</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright 2013 ThinkTel Communications</copyright>
+    <tags>ThinkTel uControl</tags>
+  </metadata>
+  <files>
+	<file src="ThinkTel.uControl.Api\bin\release\ThinkTel.uControl.Api.dll" target="lib\net45" />
+  </files>
+</package>

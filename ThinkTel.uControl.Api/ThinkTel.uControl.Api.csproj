@@ -57,7 +57,6 @@
     <Compile Include="RateCenterRequest.cs" />
     <Compile Include="ResponseCode.cs" />
     <Compile Include="ResponseException.cs" />
-    <Compile Include="RestProxy.cs" />
     <Compile Include="ServerException.cs" />
     <Compile Include="TerseNumber.cs" />
     <Compile Include="TerseRateCenter.cs" />

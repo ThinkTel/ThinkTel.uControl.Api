@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -10,15 +12,100 @@ namespace ThinkTel.uControl.Api
 {
     public class ApiClient : IApiClient
     {
-		RestProxy<ServerException> _proxy;
-		public ApiClient(string uri) 
+		private Uri _uri;
+		private NetworkCredential _credentials;
+		public ApiClient(string uri) : this(new Uri(uri)) { }
+		public ApiClient(Uri uri)
 		{
-			_proxy = new RestProxy<ServerException>(uri);
+			_uri = uri;
+			if (!string.IsNullOrEmpty(_uri.UserInfo))
+			{
+				var array = _uri.UserInfo.Split(':');
+				_credentials = new NetworkCredential(array[0], array[1]);
+			}
 		}
 
-        public async Task<TerseRateCenter[]> ListRateCentersAsync()
+		#region Serialization helpers
+		protected async Task<T> DeserializeAsync<T>(HttpResponseMessage response)
+		{
+			var body = await response.Content.ReadAsByteArrayAsync();
+			if (response.IsSuccessStatusCode)
+				return Deserialize<T>(body);
+			else 
+			{
+				try 
+				{
+					var ex = Deserialize<ServerException>(body);
+					throw new OperationException(ex);
+				} 
+				catch(SerializationException ex) 
+				{
+					throw new ClientException(response.RequestMessage.Method + " " + response.RequestMessage.RequestUri, ex);
+				}
+			}
+		}
+
+		protected T Deserialize<T>(byte[] data)
+		{
+			if(data == null || data.Length == 0)
+				return default(T);
+			else
+			{
+				var serializer = new DataContractSerializer(typeof(T));
+				using(var mem = new MemoryStream(data))
+					return (T)serializer.ReadObject(mem);
+			}
+		}
+
+		protected HttpContent Serialize<T>(T obj)
+		{
+			var serializer = new DataContractSerializer(typeof(T));
+			ByteArrayContent content;
+			using (var mem = new MemoryStream())
+			{
+				serializer.WriteObject(mem, obj);
+				content = new ByteArrayContent(mem.ToArray());
+			}
+			content.Headers.ContentType.MediaType = "text/xml";
+			return content;
+		}
+		#endregion
+
+		#region HTTP helpers
+		protected async Task<T> GetAsync<T>(string url, params object[] args)
+		{
+			url = string.Format(url, args);
+			var resp = await (new HttpClient()).GetAsync(url);
+			return await DeserializeAsync<T>(resp);
+		}
+
+		protected async Task<Tout> PostAsync<Tin, Tout>(Tin request, string url, params object[] args)
+		{
+			url = string.Format(url, args);
+			var body = Serialize(request);
+			var resp = await (new HttpClient()).PostAsync(url, body);
+			return await DeserializeAsync<Tout>(resp);
+		}
+
+		protected async Task<Tout> PutAsync<Tin, Tout>(Tin request, string url, params object[] args)
+		{
+			url = string.Format(url, args);
+			var body = Serialize(request);
+			var resp = await (new HttpClient()).PutAsync(url, body);
+			return await DeserializeAsync<Tout>(resp);
+		}
+
+		protected async Task<T> DeleteAsync<T>(string url, params object[] args)
+		{
+			url = string.Format(url, args);
+			var resp = await (new HttpClient()).DeleteAsync(url);
+			return await DeserializeAsync<T>(resp);
+		}
+		#endregion
+
+		public async Task<TerseRateCenter[]> ListRateCentersAsync()
         {
-            return await _proxy.GetAsync<TerseRateCenter[]>("RateCenters");
+            return await GetAsync<TerseRateCenter[]>("RateCenters");
         }
 
         public async Task<RateCenter> GetRateCenterAsync(string name)
@@ -26,7 +113,7 @@ namespace ThinkTel.uControl.Api
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException("name");
 
-            return await _proxy.GetAsync<RateCenter>("RateCenters/{0}", name);
+            return await GetAsync<RateCenter>("RateCenters/{0}", name);
         }
 
         public async Task<NumberRange[]> ListRateCenterBlocksAsync(string name)
@@ -34,7 +121,7 @@ namespace ThinkTel.uControl.Api
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException("name");
 
-			return await _proxy.GetAsync<NumberRange[]>("RateCenters/{0}/Blocks", name);
+			return await GetAsync<NumberRange[]>("RateCenters/{0}/Blocks", name);
         }
 
         public async Task<NumberItem[]> ListRateCenterNext10Async(string name)
@@ -42,7 +129,7 @@ namespace ThinkTel.uControl.Api
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException("name");
 
-			return await _proxy.GetAsync<NumberItem[]>("RateCenters/{0}/Next10", name);
+			return await GetAsync<NumberItem[]>("RateCenters/{0}/Next10", name);
         }
 
         public async Task<TerseNumber[]> ListSipTrunkDidsAsync(long pilotNumber)
@@ -50,7 +137,7 @@ namespace ThinkTel.uControl.Api
 			if (pilotNumber <= 0)
 				throw new ArgumentException("pilotNumber");
 
-			return await _proxy.GetAsync<TerseNumber[]>("SipTrunks/{0}/Dids", pilotNumber);
+			return await GetAsync<TerseNumber[]>("SipTrunks/{0}/Dids", pilotNumber);
         }
 
         public async Task<long[]> AddSipTrunkDidsAsync(long pilotNumber, params long[] dids)
@@ -63,7 +150,7 @@ namespace ThinkTel.uControl.Api
 				throw new ArgumentException("dids");
 
 			var request = dids.Select(x => new DidRequest { Number = x }).ToArray();
-			var response = await _proxy.PostAsync<DidRequest[], NumberResponse[]>(request, "SipTrunks/{0}/Dids", pilotNumber);
+			var response = await PostAsync<DidRequest[], NumberResponse[]>(request, "SipTrunks/{0}/Dids", pilotNumber);
 			return ValidateNumberResponses(response);
         }
 
@@ -76,7 +163,7 @@ namespace ThinkTel.uControl.Api
 			if (request.Any(x => string.IsNullOrEmpty(x.RateCenterName) || x.Quantity <= 0))
 				throw new ArgumentException("request");
 
-			var response = await _proxy.PostAsync<RateCenterRequest[], NumberResponse[]>(request, "SipTrunks/{0}/Dids/NextAvailable", pilotNumber);
+			var response = await PostAsync<RateCenterRequest[], NumberResponse[]>(request, "SipTrunks/{0}/Dids/NextAvailable", pilotNumber);
 			return ValidateNumberResponses(response);
         }
 
@@ -88,7 +175,7 @@ namespace ThinkTel.uControl.Api
 			if (did <= 0)
 				throw new ArgumentException("did");
 
-			return await _proxy.GetAsync<Did>("SipTrunks/{0}/Dids/{1}", pilotNumber, did);
+			return await GetAsync<Did>("SipTrunks/{0}/Dids/{1}", pilotNumber, did);
 		}
 
 		public async Task UpdateSipTrunkDidAsync(long pilotNumber, long did, string label, long? translatedNumber = null)
@@ -99,7 +186,7 @@ namespace ThinkTel.uControl.Api
 				throw new ArgumentException("did");
 
 			var req = new Did { Number = did, Label = label, TranslatedNumber = translatedNumber };
-			var response = await _proxy.PutAsync<Did, NumberResponse>(req, "SipTrunks/{0}/Dids/{1}", pilotNumber, did);
+			var response = await PutAsync<Did, NumberResponse>(req, "SipTrunks/{0}/Dids/{1}", pilotNumber, did);
 			ValidateNumberResponse(response);
 		}
 
@@ -110,32 +197,32 @@ namespace ThinkTel.uControl.Api
 			if (did <= 0)
 				throw new ArgumentException("did");
 
-			var response = await _proxy.DeleteAsync<NumberResponse>("SipTrunks/{0}/Dids/{1}", pilotNumber, did);
+			var response = await DeleteAsync<NumberResponse>("SipTrunks/{0}/Dids/{1}", pilotNumber, did);
 			ValidateNumberResponse(response);
         }
 
 		#region V911
 		public async Task<V911[]> ListV911sAsync()
 		{
-			return await _proxy.GetAsync<V911[]>("V911s");
+			return await GetAsync<V911[]>("V911s");
 		}
 		public async Task AddV911Async(V911 v911)
 		{
-			var response = await _proxy.PostAsync<V911, NumberResponse>(v911, "V911s");
+			var response = await PostAsync<V911, NumberResponse>(v911, "V911s");
 			ValidateNumberResponse(response);
 		}
 		public async Task<V911> GetV911Async(long did)
 		{
-			return await _proxy.GetAsync<V911>("V911s/{0}", did);
+			return await GetAsync<V911>("V911s/{0}", did);
 		}
 		public async Task UpdateV911Async(V911 v911)
 		{
-			var response = await _proxy.PutAsync<V911, NumberResponse>(v911, "V911s/{0}", v911.Number);
+			var response = await PutAsync<V911, NumberResponse>(v911, "V911s/{0}", v911.Number);
 			ValidateNumberResponse(response);
 		}
 		public async Task CancelV911Async(long did)
 		{
-			var response = await _proxy.DeleteAsync<NumberResponse>("V911s/{0}", did);
+			var response = await DeleteAsync<NumberResponse>("V911s/{0}", did);
 			ValidateNumberResponse(response);
 		}
 

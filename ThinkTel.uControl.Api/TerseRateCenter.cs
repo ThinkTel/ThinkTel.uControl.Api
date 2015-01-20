@@ -13,5 +13,23 @@ namespace ThinkTel.uControl.Api
         public string Country { get; set; }
         [DataMember]
         public uint Available { get; set; }
+
+		public override bool Equals(object obj)
+		{
+			if (obj is TerseRateCenter)
+			{
+				var other = (TerseRateCenter)obj;
+				return string.Equals(Name, other.Name) && string.Equals(Country, other.Country) && Available == other.Available;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		public override int GetHashCode()
+		{
+			return string.Format("{0}-{1}-{2}", Name, Country, Available).GetHashCode();
+		}
     }
 }

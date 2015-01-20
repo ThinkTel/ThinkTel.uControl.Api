@@ -12,16 +12,21 @@ namespace ThinkTel.uControl.Api
 {
     public class ApiClient : IApiClient
     {
-		private Uri _uri;
-		private NetworkCredential _credentials;
+		protected Uri uri;
+		protected HttpClient client;
+
 		public ApiClient(string uri) : this(new Uri(uri)) { }
 		public ApiClient(Uri uri)
 		{
-			_uri = uri;
-			if (!string.IsNullOrEmpty(_uri.UserInfo))
+			this.uri = uri;
+
+			client = new HttpClient();
+
+			if (!string.IsNullOrEmpty(uri.UserInfo))
 			{
-				var array = _uri.UserInfo.Split(':');
-				_credentials = new NetworkCredential(array[0], array[1]);
+				var creds = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(uri.UserInfo));
+				var auth = string.Format("{0} {1}", "Basic", creds);
+				client.DefaultRequestHeaders.Add("Authorization", auth);
 			}
 		}
 
@@ -66,39 +71,47 @@ namespace ThinkTel.uControl.Api
 				serializer.WriteObject(mem, obj);
 				content = new ByteArrayContent(mem.ToArray());
 			}
-			content.Headers.ContentType.MediaType = "text/xml";
+			content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/xml");
 			return content;
 		}
 		#endregion
 
 		#region HTTP helpers
+		protected string MakeUri(string relativeUrl, params object[] args)
+		{
+			if(args != null && args.Length > 0)
+				relativeUrl = string.Format(relativeUrl, args);
+
+			return string.Format("{0}://{1}:{2}{3}/{4}", uri.Scheme, uri.Host, uri.Port, uri.AbsolutePath, relativeUrl);
+		}
+
 		protected async Task<T> GetAsync<T>(string url, params object[] args)
 		{
-			url = string.Format(url, args);
-			var resp = await (new HttpClient()).GetAsync(url);
+			var uri = MakeUri(url, args);
+			var resp = await client.GetAsync(uri);
 			return await DeserializeAsync<T>(resp);
 		}
 
 		protected async Task<Tout> PostAsync<Tin, Tout>(Tin request, string url, params object[] args)
 		{
-			url = string.Format(url, args);
+			var uri = MakeUri(url, args);
 			var body = Serialize(request);
-			var resp = await (new HttpClient()).PostAsync(url, body);
+			var resp = await client.PostAsync(uri, body);
 			return await DeserializeAsync<Tout>(resp);
 		}
 
 		protected async Task<Tout> PutAsync<Tin, Tout>(Tin request, string url, params object[] args)
 		{
-			url = string.Format(url, args);
+			var uri = MakeUri(url, args);
 			var body = Serialize(request);
-			var resp = await (new HttpClient()).PutAsync(url, body);
+			var resp = await client.PutAsync(uri, body);
 			return await DeserializeAsync<Tout>(resp);
 		}
 
 		protected async Task<T> DeleteAsync<T>(string url, params object[] args)
 		{
-			url = string.Format(url, args);
-			var resp = await (new HttpClient()).DeleteAsync(url);
+			var uri = MakeUri(url, args);
+			var resp = await client.DeleteAsync(uri);
 			return await DeserializeAsync<T>(resp);
 		}
 		#endregion

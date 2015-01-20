@@ -13,5 +13,22 @@ namespace ThinkTel.uControl.Api
         public string Label { get; set; }
         [DataMember]
         public long? TranslatedNumber { get; set; }
+
+		public override bool Equals(object obj)
+		{
+			if (obj is Did)
+			{
+				var other = (Did)obj;
+				return Number == other.Number && string.Equals(Label, other.Label) && TranslatedNumber == other.TranslatedNumber;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		public override int GetHashCode()
+		{
+			return string.Format("{0}-{1}-{2}", Number, Label, TranslatedNumber).GetHashCode();
+		}
     }
 }

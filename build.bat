@@ -27,7 +27,7 @@ REM Package restore
 
 REM Build
 mkdir build
-%MsBuildExe% ThinkTel.uControl.Api.sln /p:Configuration="%config%" /m /v:M /fl /flp:LogFile=build\msbuild.log;Verbosity=Normal /nr:false
+"%MsBuildExe%" ThinkTel.uControl.Api.sln /p:Configuration="%config%" /m /v:M /fl /flp:LogFile=build\msbuild.log;Verbosity=Normal /nr:false
 if not "%errorlevel%"=="0" goto failure
 
 REM Unit tests

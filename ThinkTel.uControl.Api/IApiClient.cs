@@ -24,7 +24,5 @@ namespace ThinkTel.uControl.Api
 		Task UpdateV911Async(V911 v911);
 		Task CancelV911Async(long did);
 		Task SetV911Async(V911 v911);
-
-		Task<string> LookupNpaNxxRatecenterAsync(int npa, int nxx);
     }
 }

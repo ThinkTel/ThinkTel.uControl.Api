@@ -268,13 +268,5 @@ namespace ThinkTel.uControl.Api
 			else
 				throw new ResponseException(string.Join(", ", response.Select(x => x.ToString()).ToArray()));
 		}
-
-		#region NPA/NXX
-		// technically this isn't "uControl", but it's very useful
-		public async Task<string> LookupNpaNxxRatecenterAsync(int npa, int nxx)
-		{
-			return await LocalCallingGuide.LookupNpaNxxRatecenterAsync(npa, nxx);
-		}
-		#endregion
 	}
 }

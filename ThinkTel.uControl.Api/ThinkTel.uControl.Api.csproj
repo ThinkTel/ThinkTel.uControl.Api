@@ -47,7 +47,6 @@
     <Compile Include="Did.cs" />
     <Compile Include="DidRequest.cs" />
     <Compile Include="IApiClient.cs" />
-    <Compile Include="LocalCallingGuide.cs" />
     <Compile Include="NumberItem.cs" />
     <Compile Include="NumberRange.cs" />
     <Compile Include="NumberResponse.cs" />

@@ -35,6 +35,15 @@ namespace ThinkTel.uControl.Api.Tests
 		}
 
 		[Fact]
+		public async Task GetAccountCodeAsync()
+		{
+			var resp = 1234L;
+			api.SetupGet(REQUEST_URI + "/Users/Current/Account", resp);
+			var actual = await api.GetAccountCodeAsync();
+			Assert.Equal(resp, actual);
+		}
+
+		[Fact]
 		public async Task ListRateCentersAsync()
 		{
 			var resp = new TerseRateCenter[] {

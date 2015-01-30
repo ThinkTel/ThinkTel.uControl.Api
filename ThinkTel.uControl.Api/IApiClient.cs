@@ -5,6 +5,8 @@ namespace ThinkTel.uControl.Api
 {
     public interface IApiClient
     {
+		Task<long> GetAccountCodeAsync();
+
         Task<TerseRateCenter[]> ListRateCentersAsync();
 		Task<RateCenter> GetRateCenterAsync(string name);
 		Task<NumberRange[]> ListRateCenterBlocksAsync(string name);

@@ -116,6 +116,11 @@ namespace ThinkTel.uControl.Api
 		}
 		#endregion
 
+		public async Task<long> GetAccountCodeAsync()
+		{
+			return await GetAsync<long>("Users/Current/Account");
+		}
+
 		public async Task<TerseRateCenter[]> ListRateCentersAsync()
         {
             return await GetAsync<TerseRateCenter[]>("RateCenters");

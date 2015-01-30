@@ -2,14 +2,14 @@
 <package>
   <metadata>
     <id>ThinkTel.uControl.Api</id>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <authors>Paul Vaillant</authors>
 	<language>en-us</language>
     <licenseUrl>https://raw.githubusercontent.com/thinktel/ThinkTel.uControl.Api/master/LICENSE.txt</licenseUrl>
     <projectUrl>https://github.com/thinktel/ThinkTel.uControl.Api</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A library to access manage ThinkTel services using uControl. Requires .Net 4.5+</description>
-    <releaseNotes>Moved NPA/NXX lookup into a separate library</releaseNotes>
+    <releaseNotes>Add method to get current account code</releaseNotes>
     <copyright>Copyright 2013 ThinkTel Communications</copyright>
     <tags>ThinkTel uControl</tags>
   </metadata>
